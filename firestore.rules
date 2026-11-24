@@ -1,0 +1,142 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------
+    // Access model
+    //   SuperAdmin (ຜູ້ດູແລລະບົບ) and Admin (ແອັດມິນ) see and manage everything.
+    //   Everyone else signs in with Firebase Auth, gets a profile with
+    //   approvalStatus 'pending', and sees NO data until an admin approves.
+    //   Approved users may read/write work data, but never the users
+    //   database or the audit log.
+    // ------------------------------------------------------------------
+
+    // Real sign-in only (email/password or Google); anonymous sessions get nothing.
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // Bootstrap system administrators. email_verified is required so nobody can
+    // register these addresses with email/password and claim the role.
+    function isBootstrapAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in ['phengbmcy18@gmail.com', 'admin@uniqtek.la'];
+    }
+
+    function myDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(myDocPath());
+    }
+
+    function me() {
+      return get(myDocPath()).data;
+    }
+
+    function isApproved() {
+      return isBootstrapAdmin() || (
+        hasProfile()
+        && me().get('approvalStatus', '') == 'approved'
+        && me().get('accountEnabled', true) != false
+      );
+    }
+
+    function isSuperAdmin() {
+      return isBootstrapAdmin() || (isApproved() && me().get('accessLevel', '') == 'SuperAdmin');
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || (isApproved() && me().get('accessLevel', '') == 'Admin');
+    }
+
+    function isAdminLevel(level) {
+      return level in ['SuperAdmin', 'Admin'];
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------- Work data: approved users only ----------------
+    match /repairs/{id}        { allow read, write: if isApproved(); }
+    match /projects/{id}       { allow read, write: if isApproved(); }
+    match /cors_stations/{id}  { allow read, write: if isApproved(); }
+    match /equipment/{id}      { allow read, write: if isApproved(); }
+    match /quotations/{id}     { allow read, write: if isApproved(); }
+    match /employees/{id}      { allow read, write: if isApproved(); }
+    match /internal_notes/{id} { allow read, write: if isApproved(); }
+
+    // ---------------- Users database ----------------
+    match /users/{uid} {
+      // Admins see everyone; a user sees only their own profile/request.
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+
+      // A new user creates only their own profile, as a pending request
+      // with a non-admin level. Bootstrap admins may create theirs approved.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.email.lower() == request.auth.token.email.lower()
+        && !('password' in request.resource.data)
+        && (
+          (request.resource.data.approvalStatus == 'pending'
+            && !isAdminLevel(request.resource.data.accessLevel)
+            && request.resource.data.get('accountEnabled', true) == true)
+          || (isBootstrapAdmin()
+            && request.resource.data.approvalStatus == 'approved'
+            && request.resource.data.accessLevel == 'SuperAdmin')
+        );
+
+      // A user may edit their own non-privileged fields, and may re-request
+      // access after a rejection (rejected -> pending only).
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'username', 'role', 'department', 'phone', 'status',
+          'lastActive', 'currentActivity', 'themeMode', 'requestNote',
+          'requestedAt', 'approvalStatus', 'biometricEnabled',
+          'biometricCredentialId', 'biometricRegisteredAt'
+        ])
+        && (
+          request.resource.data.get('approvalStatus', '') == resource.data.get('approvalStatus', '')
+          || (resource.data.get('approvalStatus', '') == 'rejected'
+            && request.resource.data.approvalStatus == 'pending')
+        );
+
+      // SuperAdmins manage everyone. Admins manage non-admin users only and
+      // cannot grant Admin/SuperAdmin. Nobody may store a password here.
+      allow update: if !('password' in request.resource.data) && (
+        isSuperAdmin()
+        || (isAdmin()
+          && !isAdminLevel(resource.data.get('accessLevel', ''))
+          && !isAdminLevel(request.resource.data.get('accessLevel', '')))
+      );
+
+      allow delete: if isSuperAdmin()
+        || (isAdmin() && !isAdminLevel(resource.data.get('accessLevel', '')));
+    }
+
+    // ---------------- Audit log ----------------
+    match /activity_logs/{id} {
+      allow read, delete: if isAdmin();
+      // Any signed-in user may append a log entry about themselves. Its time
+      // (createdAtMs) must match the server clock within 15 minutes, so
+      // entries cannot be back- or forward-dated.
+      allow create: if signedIn()
+        && request.resource.data.get('userEmail', '').lower() == request.auth.token.email.lower()
+        && request.resource.data.get('createdAtMs', null) is int
+        && math.abs(request.resource.data.createdAtMs - request.time.toMillis()) < 900000;
+      allow update: if false;
+    }
+
+    // Connection probe only (read by the app on start-up).
+    match /system/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

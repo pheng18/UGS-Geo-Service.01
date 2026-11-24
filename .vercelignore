@@ -1,0 +1,7 @@
+# Never upload local secrets, caches or build output; Vercel builds from source.
+.env
+.env*.local
+node_modules
+dist
+.gradle
+.gmp_cache

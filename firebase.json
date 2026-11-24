@@ -1,0 +1,14 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-uniqtektechnical-41e30717-e3b9-49c6-97fb-ef82f72f8dc1",
+      "rules": "firestore.rules"
+    }
+  ],
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8085 },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}

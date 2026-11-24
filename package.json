@@ -1,0 +1,53 @@
+{
+  "name": "uniqtek-technical-services",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "tsc && vite build",
+    "start": "node server.ts",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/three": "^0.187.0",
+    "@vis.gl/react-google-maps": "^1.10.2",
+    "clsx": "^2.1.1",
+    "dotenv": "^18.0.10",
+    "drizzle-kit": "^0.31.11",
+    "drizzle-orm": "^0.45.4",
+    "express": "^5.3.0",
+    "firebase": "^11.4.0",
+    "firebase-admin": "^14.5.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jsqr": "^1.4.0",
+    "lucide-react": "^0.477.0",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.0.2",
+    "three": "^0.187.0",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/parser": "^8.72.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
+  }
+}

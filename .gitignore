@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Secrets and local environment (includes Vercel's .env.local token)
+.env*
+!.env.example
+
+# Tool / platform local state
+.vercel/
+.firebase/
+.gradle/
+.gmp_cache/

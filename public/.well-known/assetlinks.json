@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "la.uniqtek.services",
+      "sha256_cert_fingerprints": [
+        "68:22:61:44:73:A1:91:A8:BF:95:2C:D2:99:E4:61:37:42:8D:6B:E4:55:7F:2B:BA:EA:93:4F:7A:72:F5:12:A5"
+      ]
+    }
+  }
+]
